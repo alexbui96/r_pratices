@@ -1,0 +1,50 @@
+---
+title: "HW 10"
+author: "TUAN BUI"
+date: "11/30/2021"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+my.two.samples.t.test <- function(x, y, mu = 0, alternative, threshold = 0.05) {
+  nx <- length(x)
+  ny <- length(y)
+  mx<- mean(x)
+  my <- mean(y)
+  df <- nx + ny - 2
+  sp <- sqrt(((nx - 1)*var(x) + ((ny - 1)*var(y))/df))
+  t.stat <- (mx - my - mu)/(sp*((1/nx) + (1/ny)))
+
+  if(alternative == 'two.sided'){
+    p.res = 2 * min(pt(t.stat, df = df), (1 - pt(t.stat, df = df)))
+  }
+  if(alternative == 'less'){
+    p.res = pt(t.stat, df = df)
+  }
+  if(alternative == 'greater'){
+    p.res = 1 - pt(t.stat, df = df)
+  }
+      
+  if(p.res < threshold) {
+    con <- 'Reject H0'
+  } else { con <- 'Accept H0'}
+    
+  result <- list(test = "Student's t-test", statistics = t.stat, 
+                 p.value = p.res, conclusion = con)
+  return(result)
+  }
+```
+
+```{r}
+set.seed(123)
+my.two.samples.t.test(rnorm(100, 0, 1), rnorm(100, 1, 2), mu = 0, alternative = 'less', threshold = 0.05)
+
+set.seed(123)
+my.two.samples.t.test(rnorm(100, 5, 10), rnorm(100, 4.5, 10), mu = 0, alternative = 'two.sided', threshold = 0.05)
+```

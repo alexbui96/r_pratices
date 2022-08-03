@@ -1,0 +1,137 @@
+---
+title: "hw09"
+author: "TUAN BUI"
+date: "11/23/2021"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(caret)
+library(neuralnet)
+
+titanic_data <- read.csv('~/OneDrive - Stony Brook University/SBU/MAT + AMS/Fall 2021/AMS 380/hw/09/Titanic.csv', header = T)
+```
+
+# Question 01
+
+```{r}
+titanic_data <- subset(titanic_data, select = -c(PassengerId, Name, Ticket, Cabin))
+
+titanic_data <- na.omit(titanic_data)
+str(titanic_data)
+
+# There are 714 observations left after omitting the missing data
+
+x <- model.matrix(Survived ~ ., data = titanic_data)
+titanic_data <- cbind(x[,-1], Survived = titanic_data$Survived)
+titanic_data <- as.data.frame(titanic_data)
+
+# Generate training and testing data
+set.seed(123)
+training.samples <- titanic_data$Survived %>% 
+  createDataPartition(p = 0.75, list = FALSE)
+train.data  <- titanic_data[training.samples, ]
+test.data <- titanic_data[-training.samples, ]
+```
+
+# Question 02
+
+```{r}
+set.seed(123)
+model_02 <- neuralnet(Survived ~ ., data = train.data, hidden = 0, err.fct = "sse", linear.output = F)
+
+plot(model_02, rep = "best")
+
+probabilities_02 <- model_02 %>% predict(test.data) %>% as.vector()
+predicted.classes_02 <- ifelse(probabilities_02 > 0.5, 1, 0)
+confusionMatrix(factor(predicted.classes_02), factor(test.data$Survived), positive = '1')
+
+# confusion matrix
+table(predicted.classes_02, test.data$Survived)
+# The overall accuracy of the test data is 0.8315
+# The sensitivity of the test data is 0.7375
+# The specificity of the test data is 0.9082
+```
+
+# Question 03
+
+```{r}
+set.seed(123)
+model_03 <- neuralnet(Survived ~ ., data = train.data, hidden = 0, err.fct = "ce", linear.output = F)
+plot(model_03, rep = "best")
+
+probabilities_03 <- model_03 %>% predict(test.data) %>% as.vector()
+predicted.classes_03 <- ifelse(probabilities_03 > 0.5, 1, 0)
+confusionMatrix(factor(predicted.classes_03), factor(test.data$Survived), positive = '1')
+
+# confusion matrix
+table(predicted.classes_03, test.data$Survived)
+# The overall accuracy of the test data is 0.8315
+# The sensitivity of the test data is 0.7375
+# The specificity of the test data is 0.9082
+```
+
+# Question 04
+
+```{r}
+set.seed(123)
+model_04 <- glm(Survived ~ ., family = binomial, data = train.data)
+# The fitted logistic regression model coefficients obtained using the training data:
+summary(model_04)$coefficients
+
+# The results of the CE loss neutral network without hidden layer are similar with the logistic regression model.
+
+probabilities_04 <- model_04 %>% predict(test.data, type = "response")
+predicted.classes_04 <- ifelse(probabilities_04 > 0.5, 1, 0)
+confusionMatrix(factor(predicted.classes_04), factor(test.data$Survived), positive = '1')
+
+
+# confusion matrix
+table(predicted.classes_04, test.data$Survived)
+# The overall accuracy of the test data is 0.8315
+# The sensitivity of the test data is 0.7375
+# The specificity of the test data is 0.9082
+```
+
+# Question 05
+
+```{r}
+model_05 <- neuralnet(Survived ~ ., data = train.data, hidden = 3, err.fct = "sse", linear.output = F)
+plot(model_05, rep = "best")
+
+probabilities_05 <- model_05 %>% predict(test.data) %>% as.vector()
+predicted.classes_05 <- ifelse(probabilities_05 > 0.5, 1, 0)
+confusionMatrix(factor(predicted.classes_05), factor(test.data$Survived), positive = '1')
+
+# confusion matrix
+table(predicted.classes_05, test.data$Survived)
+# The overall accuracy of the test data is 0.8258
+# The sensitivity of the test data is 0.6625
+# The specificity of the test data is 0.9592
+
+# The prediction with hidden layer is similar performance with no hidden layer
+```
+
+# Question 06
+
+```{r}
+model_06 <- neuralnet(Survived ~ ., data = train.data, hidden = 3, err.fct = "ce", linear.output = F)
+plot(model_06, rep = "best")
+
+probabilities_06 <- model_06 %>% predict(test.data) %>% as.vector()
+predicted.classes_06 <- ifelse(probabilities_06 > 0.5, 1, 0)
+confusionMatrix(factor(predicted.classes_06), factor(test.data$Survived), positive = '1')
+
+# confusion matrix
+table(predicted.classes_06, test.data$Survived)
+# The overall accuracy of the test data is 0.8371
+# The sensitivity of the test data is 0.6625
+# The specificity of the test data is 0.9796
+
+# The prediction with hidden layer is similar performance with no hidden layer
+```

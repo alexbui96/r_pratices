@@ -1,0 +1,98 @@
+---
+title: "HW 07"
+author: 'Tuan Bui, SBU ID: 113141951'
+date: "11/1/2021"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(rattle)
+library(tidyverse)
+library(caret)
+library(rpart)
+
+titanic_data <- read.csv('~/OneDrive - Stony Brook University/SBU/MAT + AMS/Fall 2021/AMS 380/hw/07/Titanic.csv', header = T)
+```
+
+# Question 01:
+
+```{r}
+titanic_data <- subset(titanic_data, select = -c(Name, Ticket, Cabin))
+
+titanic_data <- na.omit(titanic_data)
+str(titanic_data)
+
+# There are 714 observations left after omitting the missing data
+
+titanic_data$Survived <- as.factor(titanic_data$Survived)
+titanic_data$Pclass <- as.factor(titanic_data$Pclass)
+
+# Generate training and testing data
+set.seed(123)
+training.samples <- titanic_data$Survived %>% 
+  createDataPartition(p = 0.8, list = FALSE)
+train.data  <- titanic_data[training.samples, ]
+test.data <- titanic_data[-training.samples, ]
+```
+
+# Question 02:
+
+```{r}
+fit <- rpart(Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked, data = train.data, method="class")
+
+fancyRpartPlot(fit)
+
+predicted.classes <- fit %>% 
+  predict(test.data, type = "class")
+
+predicted.survival <- data.frame(PassengerId = test.data$PassengerId, Survived = predicted.classes)
+predicted.survival
+
+
+```
+
+# Question 03:
+
+```{r}
+# Fit the model on the training set
+set.seed(123)
+model <- train(
+  Survived ~., data = train.data, method = "rpart",
+  trControl = trainControl("cv", number = 10),
+  tuneLength = 10
+  )
+
+plot(model)
+
+model$bestTune
+# The best CP value is 0
+
+fancyRpartPlot(model$finalModel)
+```
+
+# Question 04:
+
+```{r}
+predicted.classes2 <- model %>% predict(test.data)
+# Compute model accuracy rate on test data
+
+# confusion matrix
+table(predicted.classes2, test.data$Survived)
+
+mean(predicted.classes2 == test.data$Survived)
+# The overall accuracy of the test data is 0.8098592
+
+sum((test.data$Survived == 1)*(predicted.classes2 == 1))/sum(test.data$Survived ==
+1)
+# The sensitivity of the test data is 0.7586207
+
+sum((test.data$Survived == 0)*(predicted.classes2 == 0))/sum(test.data$Survived ==
+0)
+# The specificity of the test data is 0.8452381
+```

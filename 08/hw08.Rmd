@@ -1,0 +1,118 @@
+---
+title: "HW 08"
+author: "TUAN BUI"
+date: "11/16/2021"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(caret)
+library(randomForest)
+library(kernlab)
+
+spambase_data <- read.table('~/OneDrive - Stony Brook University/SBU/MAT + AMS/Fall 2021/AMS 380/hw/08/spambase.data', sep = ",")
+
+spambase_names <- read.delim('~/OneDrive - Stony Brook University/SBU/MAT + AMS/Fall 2021/AMS 380/hw/08/spambase.names')
+
+spambase_names <- spambase_names[-c(1:29),]
+spambase_names <- as.data.frame(spambase_names)
+spambase_names <- spambase_names %>%
+  separate(spambase_names, c("Variable", "Type"), sep = ":") 
+names(spambase_data) <- spambase_names$Variable
+names(spambase_data)[58] <- 'class'
+
+# clean data
+spambase_data <- na.omit(spambase_data)
+
+spambase_data$class <- as.factor(spambase_data$class)
+```
+
+# Question 01:
+
+```{r}
+# Use the random seed 123 to divide the cleaned data into 75% training and 25% testing
+set.seed(123)
+training.samples <- spambase_data$class %>% 
+  createDataPartition(p = 0.75, list = FALSE)
+train.data  <- spambase_data[training.samples, ]
+test.data <- spambase_data[-training.samples, ]
+```
+
+# Question 02:
+
+```{r}
+set.seed(123)
+model <- train(
+  class ~., data = train.data, method = "rf",
+  trControl = trainControl("cv", number = 10),
+  importance = TRUE
+  )
+
+predicted.classes_1 <- model %>% predict(train.data)
+
+# Confusion matrix of the training data 
+table(predicted.classes_1, train.data$class)
+
+mean(predicted.classes_1 == train.data$class)
+# The overall accuracy of the training data is 0.9994205
+
+sum((train.data$class == 1)*(predicted.classes_1 == 1))/sum(train.data$class ==
+1)
+# The sensitivity of the test data is 0.9985294
+
+sum((train.data$class == 0)*(predicted.classes_1 == 0))/sum(train.data$class ==
+0)
+# The specificity of the test data is 1
+```
+
+# Question 03:
+
+```{r}
+predicted.classes_2 <- model %>% predict(test.data)
+
+# Confusion matrix of the testing data
+table(predicted.classes_2, test.data$class)
+
+mean(predicted.classes_2 == test.data$class)
+# The overall accuracy of the testing data is 0.9504348
+
+sum((test.data$class == 1)*(predicted.classes_2 == 1))/sum(test.data$class ==
+1)
+# The sensitivity of the testing data is 0.9249448
+
+sum((test.data$class == 0)*(predicted.classes_2 == 0))/sum(test.data$class ==
+0)
+# The specificity of the testing data is 0.9670014
+```
+
+# Question 04:
+
+```{r}
+# Plot MeanDecreaseAccuracy
+varImpPlot(model$finalModel, type = 1)
+
+# Plot MeanDecreaseGini
+varImpPlot(model$finalModel, type = 2)
+```
+
+# Question 05:
+
+```{r}
+# The importance of each variable in percentage based on MeanDecreaseAccuracy
+varImp(model$finalModel, type = 1)
+```
+
+# Question 06:
+
+```{r}
+mtry <- 26
+p <- mtry*3
+p
+
+# The number of variables we should (as commonly recommended) to select, at random, to be considered for that node split are 78
+```

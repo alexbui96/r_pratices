@@ -1,0 +1,95 @@
+---
+title: "HW 06"
+author: "TUAN BUI"
+date: "10/25/2021"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Question 01:
+
+```{r}
+library(tidyverse)
+library(caret)
+library(MASS)
+library(dummies)
+library(leaps)
+library(bestglm)
+theme_set(theme_bw())
+
+banknote_data <- read.csv('~/OneDrive - Stony Brook University/SBU/MAT + AMS/Fall 2021/AMS 380/hw/06/banknote.csv', header = T)
+
+banknote_data <- na.omit(banknote_data)
+
+banknote_data$class <- as.factor(banknote_data$class)
+```
+
+## (a): Split the data into 80% training and 20% testing using seed =123
+
+```{r}
+set.seed(123)
+training.samples <- banknote_data$class %>% 
+  createDataPartition(p = 0.8, list = FALSE)
+train.data  <- banknote_data[training.samples, ]
+test.data <- banknote_data[-training.samples, ]
+```
+
+## (b): Fit a logistic regression model with all 4 predictors using the training data
+
+```{r}
+model <- glm( class ~., data = train.data, family = binomial)
+summary(model)$coef
+
+# logistic equation: p = exp(-7.1001295 + 7.4068618 * variance + 3.9759205 * skewness + 4.9812792 * curtosis + 0.5236681 * entropy) / [1 + exp(-7.1001295 + 7.4068618 * variance + 3.9759205 * skewness + 4.9812792 * curtosis + 0.5236681 * entropy)]
+```
+
+## (c): Predict the response variable 'class', generate confusion matrix, and report accuracy, sensitivity, specificity for the testing data
+
+```{r}
+probabilities <- model %>% predict(test.data, type = "response")
+predicted.classes <- ifelse(probabilities > 0.5, 1, 0)
+
+mean(test.data$class == predicted.classes)
+# accuracy of prediction in the test data is 0.9817518
+
+sum((test.data$class == 1)*(predicted.classes == 1))/sum(test.data$class == 1)
+# sensitivity in the test data is 0.9868421
+
+sum((test.data$class == 0)*(predicted.classes == 0))/sum(test.data$class == 0)
+# specificity in the test data is 0.9754098
+
+# confusion matrix
+table(predicted.classes, test.data$class)
+
+# accuracy of prediction in the test data is 0.9817518
+# sensitivity in the test data is 0.9868421
+# specificity in the test data is 0.9754098
+```
+
+# Question 01 (other):
+
+```{r}
+fit <- glm(class ~ . , data = banknote_data, family = 'binomial')
+summary(fit)$coef
+
+# logistic equation: p = exp(-7.321805 + 7.859330 * variance + 4.190963 * skewness + 5.287431 * curtosis + 0.605319 * entropy) / [1 + exp(-7.321805 + 7.859330 * variance + 4.190963 * skewness + 5.287431 * curtosis + 0.605319 * entropy)]
+
+step1 <- stepAIC(fit, trace = T, k = log(nrow(banknote_data)))
+step1$anova
+BIC(step1)
+
+# The best predict model using the stepwise variable section method and the BIC is class ~ variance + skewness + curtosis with the associated BIC value is 82.19474
+```
+
+# Question 02:
+
+```{r}
+step2 <- bestglm(banknote_data , IC = "BIC", family = binomial)
+step2$BestModel
+BIC(step2$BestModel)
+
+# The best predict model using the best subset variable selection method and the BIC is class ~ variance + skewness + curtosis with the associated BIC value is 82.19474
+```

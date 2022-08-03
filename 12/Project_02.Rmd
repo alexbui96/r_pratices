@@ -1,0 +1,61 @@
+---
+title: "Project 02"
+author: "TUAN BUI"
+date: "11/30/2021"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+rm(list = ls())
+# Load data
+Project_data <- read.csv("~/OneDrive - Stony Brook University/SBU/MAT + AMS/Fall 2021/AMS 315/project/02/141951_project2test.csv", header = T)
+# Check missing data
+sum(is.na(Project_data))
+
+# Load packages
+library(MASS)
+library(leaps)
+library(knitr)
+
+cor(Project_data)
+
+fit_E <- lm(Y ~ E1 + E2 + E3 + E4, data = Project_data)
+summary(fit_E)
+
+fit_raw <- lm(Y ~ (E1 + E2 + E3 + E4 + G1 + G2 + G3 + G4 + G5 + G6 + G7 + G8 + G9 + G10 + G11 + G12 + G13 + G14 + G15 + G16 + G17 + G18 + G19 + G20)^2, data = Project_data)
+
+plot(resid(fit_raw) ~ fitted(fit_raw), main = 'Residual Plot')
+
+boxcox(fit_raw)
+
+fit_trans <- lm( I(Y^.55) ~ (E1 + E2 + E3 + E4 + G1 + G2 + G3 + G4 + G5 + G6 + G7 + G8 + G9 + G10 + G11 + G12 + G13 + G14 + G15 + G16 + G17 + G18 + G19 + G20)^2, data = Project_data)
+
+summary(fit_E)$adj.r.square
+summary(fit_raw)$adj.r.square
+summary(fit_trans)$adj.r.square
+
+plot(resid(fit_trans) ~ fitted(fit_trans), main = 'Residual Plot')
+
+fit <- regsubsets(model.matrix(fit_trans)[, -1], I((Project_data$Y)^.55), nbest = 1, nvmax = 5, method = 'forward', intercept = T)
+temp_01 <- summary(fit)
+
+Var <- colnames(model.matrix(fit_trans))
+fit_select <- apply(temp_01$which, 1, function(x) paste0(Var[x], collapse = '+'))
+kable(data.frame(cbind(model = fit_select, adjR2 = temp_01$adjr2, BIC = temp_01$bic)), caption = 'Model summary')
+
+fit_main <- lm( I(Y^.55) ~ E1 + E2 + E3 + E4 + G1 + G2 + G3 + G4 + G5 + G6 + G7 + G8 + G9  + G10 + G11 + G12 + G13 + G14 + G15 + G16 + G17 + G18 + G19 + G20, data=Project_data)
+temp_02 <- summary(fit_main)
+
+temp_02$coefficients
+
+kable(temp_02$coefficients[abs(temp_02$coefficients[, 4]) <= 0.001, ], caption='Sig Coefficients')
+
+fit_2stage <- lm( I(Y^.55) ~ (G4 +E1 + E4 + G6 + G16)^2, data = Project_data)
+temp_03 <- summary(fit_2stage)
+temp_03
+kable(temp_03$coefficients[ abs(temp_03$coefficients[, 3]) >= 4, ]) 
+```

@@ -1,0 +1,116 @@
+---
+title: "HW 03"
+author: "Tuan Bui"
+output:
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Question 01:
+
+```{r}
+income_data <- read.csv('~/OneDrive - Stony Brook University/SBU/MAT + AMS/Fall 2021/AMS 380/hw/03/income.data.csv', header = T)
+
+attach(income_data)
+
+fit <- lm(income ~ happiness)
+fit
+
+# a. The least square regression line equation: income = 0.9053 + 1.0497 * happiness
+
+# b. Plot the points and regression line in the same figure
+plot(income, happiness)
+abline(fit)
+
+# c. Check assumptions:
+par(mfrow = c(2,2))
+plot(fit)
+
+## 1. Linearity: it is satisfied because the residuals are symmetrically distributed around the 0-line in the Residuals vs Fitted plot.
+
+## 2. Homoscedasticity: it is satisfied because the square root of standardized residuals is symmetrically distributed around the 1-line in the Scale-Location plot.
+
+## 3. Independence: assume it is satisfied
+
+## 4. Normality:
+shapiro.test(residuals(fit))
+### p-value is 0.4377 greater than the significance level 0.05, so residuals is normal distributed, normality assumption is satisfied
+
+# d. Sample correlation coefficient between the 2 variables:
+cor(income, happiness)
+## Sample correlation coefficient is 0.8656337
+
+## The corresponding population correlation test:
+cor.test(income, happiness)
+### p-value is less than 2.2e-16, which is less than the significance level 0.05, reject H0. The correlation is not 0.
+
+# e.
+summary(fit)
+## The coefficient of determination is 0.7493
+## p-value for coefficient of happiness is less than 2.2e-16, which is less than the significance level 0.05, reject H0. There is a significantly linear relationship between income and happiness.
+
+# f. ANOVA table of the regression
+anova(fit)
+### The p-value for ANOVA F-test is less than 2.2e-16, which is less than the significance level 0.05, reject H0. The regression effect is significant.
+
+detach(income_data)
+```
+
+## Question 02:
+
+```{r}
+heart_data <- read.csv('~/OneDrive - Stony Brook University/SBU/MAT + AMS/Fall 2021/AMS 380/hw/03/heart.data.csv', header = T)
+attach(heart_data)
+
+fit <- lm (heart.disease ~ biking)
+fit
+
+# a.The least square regression line equation: 
+## heart.disease = 17.7779 - 0.2003 * biking
+
+# b. Plot
+plot(heart.disease, biking)
+abline(fit)
+
+# c. Check assumptions:
+par(mfrow = c(2,2))
+plot(fit)
+     
+## 1. Linearity: it is satisfied because the residuals are symmetrically distributed around the 0-line in the Residuals vs Fitted plot.
+
+## 2. Homoscedasticity: it is satisfied because the square root of standardized residuals is symmetrically distributed around the 1-line in the Scale-Location plot.
+
+## 3. Independence: assume it is satisfied
+
+## 4. Normality:
+shapiro.test(residuals(fit))
+### p-value is 0.8351 greater than the significance level 0.10, so residuals is normal distributed, normality assumption is satisfied
+
+# d. Sample correlation coefficient between the 2 variables:
+cor(heart.disease, biking)
+## Sample correlation coefficient is -0.9753352
+
+## The corresponding population correlation test:
+cor.test(heart.disease, biking)
+### p-value is less than 2.2e-16, which is less than the significance level 0.10, reject H0. The correlation is not 0.
+
+# e.
+summary(fit)
+## The coefficient of determination is 0.9513
+## p-value for coefficient of biking is less than 2.2e-16, which is less than the significance level 0.10, reject H0. There is a significantly linear relationship between heart.disease and biking.
+
+# f. The percentage of people in the town who have heart disease if the percentage of people who bike to work is 65% in that town:
+heart.disease_rate <- 17.7779 - 0.2003 * 65
+heart.disease_rate
+
+## There are 4.7584% people in the town who have heart disease if the percentage of people who bike to work is 65% in that town.
+
+# g. The 90% confidence interval:
+confint(fit, level = 0.90)
+
+detach(heart_data)
+```

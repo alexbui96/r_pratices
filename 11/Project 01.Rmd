@@ -1,0 +1,115 @@
+---
+title: "AMS 315 - Project 01"
+author: "TUAN BUI"
+date: "10/16/2021"
+output:
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Part A
+
+```{r}
+library(mice)
+library(knitr)
+
+wdir <- "~/OneDrive - Stony Brook University/SBU/MAT + AMS/Fall 2021/AMS 315/project/01/Data"
+setwd(wdir)
+
+PartA_IV <- read.csv("141951_IV.csv", header = T)
+PartA_DV <- read.csv("141951_DV.csv", header = T)
+PartB <- read.csv("141951_PartB.csv", header = T)
+
+PartA <- merge(PartA_IV, PartA_DV, by = 'ID')
+
+str(PartA_IV)
+min(PartA_IV$ID)
+str(PartA_DV)
+str(PartA)
+```
+
+[Report:]{.ul}
+
+> There are 540 observations in this file and three columns in the data set, called 'ID', 'IV' and 'DV'. Each is numerical.
+
+```{r}
+md.pattern(PartA)
+```
+
+[Report:]{.ul}
+
+> There are 451 complete data sets.
+>
+> IV is missing in 47 cases, DV is missing in 58 cases, and both IV and DV are missing in 16 cases.
+
+```{r}
+PartA_imp <- PartA[!is.na(PartA$IV)==TRUE|!is.na(PartA$DV)==TRUE,]
+imp <- mice(PartA_imp, method = "norm.boot", printFlag = FALSE)
+PartA_complete <- complete(imp)
+
+md.pattern(PartA_complete)
+```
+
+[Report:]{.ul}
+
+> There are 524 complete data sets after imputing missing data. There are no data for 16 observations
+
+```{r}
+fit <- lm(DV ~ IV, data = PartA_complete)
+summary(fit)
+```
+
+```{r}
+kable(anova(fit), caption='ANOVA Table')
+```
+
+```{r}
+plot(PartA_complete$DV ~ PartA_complete$IV, main='Scatter : DV ~ IV', xlab= "IV", ylab = "DV")
+abline(fit, col='red', lty=3, lwd=2)
+legend('topleft', legend='Estimated Regression Line', lty=3, lwd=2, col='red')
+```
+
+95% confidence interval of the slope:
+
+```{r}
+confint(fit, level = 0.95)
+```
+
+99% confidence interval of the slope
+
+```{r}
+confint(fit, level = 0.99)
+```
+
+# Part B
+
+```{r}
+fit_trial <- lm(sqrt(PartB$y) ~ PartB$x)
+plot(sqrt(PartB$y) ~ PartB$x)
+abline(fit_trial)
+
+summary(fit_trial)
+
+PartB_trans <- data.frame(xtrans = PartB$x, ytrans = sqrt(PartB$y))
+
+cor(PartB_trans$xtrans, PartB_trans$ytrans)
+
+confint(fit_trial, level = 0.95)
+
+confint(fit_trial, level = 0.99)
+
+groups <- cut(PartB_trans$xtrans, breaks = c(-Inf, seq(min(PartB_trans$xtrans) + 0.3, max(PartB_trans$xtrans) - 0.3, by = 0.3), Inf))
+table(groups)
+
+x_b <- ave(PartB_trans$xtrans, groups)
+data_bin <- data.frame(x = x_b, y = PartB_trans$ytrans)
+
+library(remotes)
+library(alr3)
+
+fit_b <- lm(y ~ x, data = data_bin)
+pureErrorAnova(fit_b)
+```

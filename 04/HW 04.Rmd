@@ -1,0 +1,217 @@
+---
+title: "HW 04"
+author: "TUAN BUI"
+date: "9/28/2021"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Question 01
+
+```{r}
+#install.packages('car')
+library(carData)
+data("Salaries", package = "carData")
+Salaries
+```
+
+## 1.a.
+
+```{r}
+fit_1a <- lm(salary ~ sex, data = Salaries)
+fit_1a
+
+# The general linear model with the response variable being ‘salary’ and a single predictor being ‘sex’ is: salary = 101002 + 14088 * I(sex = Male)
+
+summary(fit_1a)
+
+# p-value for sexMale is 0.005667, less than 0.05, reject H0.
+# Gender is a significant predictor of salary.
+```
+
+## 1.b.
+
+```{r}
+Salaries$sex <- relevel(factor(Salaries$sex), ref = 'Male')
+fit_1b <- lm(salary ~ sex, data = Salaries)
+fit_1b
+
+# The general linear model with the response variable being ‘salary’ and a single predictor being ‘sex’ with 'female' group as baseline is: salary = 115090 - 14088 * I(sex = Female)
+```
+
+## 1.c.
+
+```{r}
+fit_1c <- lm(salary ~ yrs.service + rank + discipline + sex, data = Salaries)
+anova(fit_1c)
+
+# p-value for yrs.service is 0.426958, greater than the significance level, 0.05, not reject H0. yrs.service is not significant.
+
+# p-value for rankAssocProf is 0.000428, less than the significance level, 0.05, reject H0. rankAssocProf is significant.
+
+# p-value for rankProf is < 2e-16, less than the significance level, 0.05, reject H0. rankProf is significant.
+
+# p-value for disciplineB is 1.24e-08, greater than the significance level, 0.05, reject H0. disciplineB is not significant.
+
+# p-value for sexFemale is 0.219311, greater than the significance level, 0.05, not reject H0. sexFemale is not significant.
+
+summary(fit_1c)
+
+# LS of salary = 73122.92 - 88.78*yrs.service + 14560.40 * I(rank = AssocProf) + 49159.64 * I(rank = Prof) + 13473.38 * I(discipline = B) - 4771.25 * I(sex = Female)
+```
+
+## 1.d.
+
+```{r}
+# The coefficient of determination is 0.4478, which is greater than 0.2 and less than 0.6
+# This statistic indicates a good linear model fit
+```
+
+## 1.e.
+
+```{r}
+par(mfrow = c(2,2))
+plot(fit_1c)
+     
+# 1. Linearity: it is satisfied because the residuals are symmetrically distributed around the 0-line in the Residuals vs Fitted plot.
+
+# 2. Homoscedasticity: it is not satisfied because the square root of standardized residuals is symmetrically distributed around the 1-line in the Scale-Location plot.
+
+# 3. Independence: assume it is satisfied
+
+# 4. Normality:
+shapiro.test(residuals(fit_1c))
+
+# p-value is 8.202e-09, less than the significance level 0.05, so residuals is not normal distributed, normality assumption is not satisfied
+```
+
+# Question 02
+
+```{r}
+#install.packages("tidyverse")
+#install.packages("caret")
+#install.packages("leaps")
+#install.packages("MASS")
+library(tidyverse)
+library(caret)
+library(leaps)
+library(MASS)
+data("swiss")
+sample_n(swiss, 3)
+```
+
+## 2.a.
+
+```{r}
+models_2a <- regsubsets(Fertility ~ ., data = swiss, nvmax = 5)
+summary(models_2a)
+
+# Best model with 1 variable: Fertility ~ Education
+# Best model with 2 variables: Fertility ~ Education + Catholic
+# Best model with 3 variables: Fertility ~ Education + Catholic + Infant.Mortality
+# Best model with 4 variables: Fertility ~ Agriculture + Education + Catholic + Infant.Mortality
+# Best model with 5 variable: Fertility ~ Agriculture + Examination + Education + Catholic + Infant.Mortality
+```
+
+## 2.b.
+
+```{r}
+get_model_formula <- function(id, object, outcome){
+  models <- summary(object)$which[id,-1]
+  predictors <- names(which(models == TRUE))
+  predictors <- paste(predictors, collapse = "+")
+  as.formula(paste0(outcome, "~", predictors))
+}
+
+get_cv_error <- function(model.formula, data){
+  set.seed(1)
+  train.control <- trainControl(method = "cv", number = 5)
+  cv <- train(model.formula, data = data, method = "lm",
+              trControl = train.control)
+  cv$results$RMSE
+}
+
+model.ids <- 1:5
+cv.errors <-  map(model.ids, get_model_formula, models_2a, "Fertility") %>%
+  map(get_cv_error, data = swiss) %>%
+  unlist()
+cv.errors
+
+which.min(cv.errors)
+
+coef(models_2a, 4)
+
+# The equation of the best overall model: Fertility = 62.1013116 - 0.1546175*Agriculture - 0.9802638*Education + 0.1246664*Cartholic + 1.0784422*Infant.Mortality 
+```
+
+## 2.c.
+
+```{r}
+stepAIC(lm(Fertility ~ Agriculture + Examination + Education + Catholic + Infant.Mortality, data = swiss), direction = 'both', k = log(nrow(swiss)))
+
+# The equation of the best overall model: Fertility = 62.1013 - 0.1546*Agriculture - 0.9803*Education + 0.1247*Cartholic + 1.0784*Infant.Mortality
+```
+
+# Question 03
+
+```{r}
+crop_data <- read.csv('~/OneDrive - Stony Brook University/SBU/MAT + AMS/Fall 2021/AMS 380/hw/04/crop.data.csv', header = T)
+```
+
+## 3.a.
+
+```{r}
+boxplot(yield ~ fertilizer, data = crop_data)
+```
+
+## 3.b.
+
+```{r}
+fit_3b <- lm(yield ~ as.factor(fertilizer), data = crop_data)
+anova(fit_3b)
+
+# H0: mu1 = mu2 = mu3     Ha: at least one mu is different.
+
+# p-value for the F-test is 0.0006999, less than the significance level 0.05, reject H0.
+# The effect of fertilizer is significant and the mean of different groups is different.
+```
+
+## 3.c.
+
+```{r}
+res.aov <- aov(yield ~ factor(fertilizer), data = crop_data)
+TukeyHSD(res.aov)
+
+# p-value of comparison of fertilizer 1 and 2 is 0.4954705, greater than the significance level 0.05, not reject H0. The mean of fertilizer 1 and 2 are the same.
+
+# p-value of comparison of fertilizer 1 and 3 is 0.0006125, less than the significance level 0.05, reject H0. The mean of fertilizer 1 and 3 are different.
+
+# p-value of comparison of fertilizer 2 and 3 is 0.0208735, less than the significance level 0.05, reject H0. The mean of fertilizer 2 and 3 are different.
+```
+
+## 3.d.
+
+```{r}
+# H0: mu2 = mu3     Ha: mu2 != mu3
+
+yield_2 <- crop_data$yield[crop_data$fertilizer == 2]
+yield_3 <- crop_data$yield[crop_data$fertilizer == 3]
+
+shapiro.test(yield_2)
+shapiro.test(yield_3)
+
+# p-value of the shapiro test of yield_2 and yield_3 are 0.8875 and 0.2542, both greater than the significance level 0.05, not reject H0, the samples are both normal.
+
+var.test(yield_2,yield_3)
+
+# p-value of variance test is 0.8135, greater than the significance level 0.05, the variances of yield_2 and yield_3 are assumed to be the same.
+
+t.test(yield_2, yield_3, mu = 0, var.equal = T)
+
+# p-value of the t-test is 0.0054, less than the significance level 0.05, reject H0. The mean of yield of fertilizer 2 and 3 are significantly different.
+```

@@ -1,0 +1,185 @@
+---
+title: "HW 05"
+author: "TUAN BUI"
+date: "10/3/2021"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+housing_data <- read.csv('~/OneDrive - Stony Brook University/SBU/MAT + AMS/Fall 2021/AMS 380/hw/05/Ames_Housing_Data.csv', header = T)
+
+library(tidyverse)
+library(caret)
+library(glmnet)
+```
+
+# Question 1
+
+```{r}
+colSums(is.na(housing_data))
+
+## There is no missing values observation in this data
+```
+
+# Question 2
+
+```{r}
+# Dividing the data into 75% training and 25% testing
+set.seed(123)
+housing.samples <- housing_data$SalePrice %>%
+  createDataPartition(p = 0.75, list = FALSE)
+train.data  <- housing_data[housing.samples, ]
+test.data <- housing_data[-housing.samples, ]
+```
+
+# Question 3
+
+```{r}
+# Predictor variables
+x <- model.matrix(SalePrice~., train.data)[,-1]
+# Outcome variable
+y <- train.data$SalePrice
+```
+
+## 3.a.
+
+```{r}
+# Make predictions on the test data
+cv_3 <- cv.glmnet(x, y, alpha = 0)
+# Display the best lambda value
+cv_3$lambda.min
+## The best lambda value is 6452.856
+```
+
+## 3.b.
+
+```{r}
+model_3 <- glmnet(x, y, alpha = 0, lambda = cv_3$lambda.min)
+# Display the coefficients of the fitted model
+coef(model_3)
+```
+
+## 3.c.
+
+```{r}
+# Make predictions on the test data
+x.test <- model.matrix(SalePrice ~., test.data)[,-1]
+predictions_3 <- model_3 %>% predict(x.test) %>% as.vector()
+
+# Plot predictions 
+plot(test.data$SalePrice ,predictions_3, xlab = "SalePrice", ylab = "Prediction")
+
+# Model performance metrics
+data.frame(
+  RMSE = RMSE(predictions_3, test.data$SalePrice),
+  Rsquare = R2(predictions_3, test.data$SalePrice)
+)
+```
+
+# Question 4
+
+## 4.a.
+
+```{r}
+# Make predictions on the test data
+cv_4 <- cv.glmnet(x, y, alpha = 1)
+# Display the best lambda value
+cv_4$lambda.min
+## The best lambda value is 352.4729
+```
+
+## 4.b.
+
+```{r}
+model_4 <- glmnet(x, y, alpha = 1, lambda = cv_4$lambda.min)
+# Display the coefficients of the fitted model
+coef(model_4)
+```
+
+## 4.c.
+
+```{r}
+# Make predictions on the test data
+predictions_4 <- model_4 %>% predict(x.test) %>% as.vector()
+
+# Plot predictions 
+plot(test.data$SalePrice ,predictions_4, xlab = "SalePrice", ylab = "Prediction")
+
+# Model performance metrics
+data.frame(
+  RMSE = RMSE(predictions_4, test.data$SalePrice),
+  Rsquare = R2(predictions_4, test.data$SalePrice)
+)
+```
+
+# Question 5
+
+## 5.a.
+
+```{r}
+model_5 <- train(
+  SalePrice ~., data = train.data, method = "glmnet",
+  trControl = trainControl("cv", number = 10),
+  tuneLength = 10
+)
+# Best tuning parameter
+model_5$bestTune
+```
+
+## 5.b.
+
+```{r}
+coef(model_5$finalModel, model_5$bestTune$lambda)
+```
+
+## 5.c.
+
+```{r}
+predictions_5 <- model_5 %>% predict(test.data)
+
+#Plot
+plot(test.data$SalePrice ,predictions_5, xlab = "SalePrice", ylab = "Prediction")
+
+# Model performance metrics
+data.frame(
+  RMSE = RMSE(predictions_5, test.data$SalePrice),
+  Rsquare = R2(predictions_5, test.data$SalePrice)
+) 
+```
+
+## 5.d.
+
+```{r}
+lambda_1 <- 10^seq(-3, 3, length = 100)
+
+# Ridge model
+ridge <- train(
+  SalePrice ~., data = train.data, method = "glmnet",
+  trControl = trainControl("cv", number = 10),
+  tuneGrid = expand.grid(alpha = 0, lambda = lambda_1)
+  )
+
+# Lasso model
+lasso <- train(
+  SalePrice ~., data = train.data, method = "glmnet",
+  trControl = trainControl("cv", number = 10),
+  tuneGrid = expand.grid(alpha = 1, lambda = lambda_1)
+  )
+
+# Elastic model
+elastic <- train(
+  SalePrice ~., data = train.data, method = "glmnet",
+  trControl = trainControl("cv", number = 10),
+  tuneLength = 10
+  )
+
+# Compare
+models <- list(ridge = ridge, lasso = lasso, elastic = elastic)
+resamples(models) %>% summary(metric = "RMSE")
+
+## It can be seen that the Lasso net model has the lowest median RMSE. Hence, Lasso model is the best for the Ames Housing data.
+```

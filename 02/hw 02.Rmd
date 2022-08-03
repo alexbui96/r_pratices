@@ -1,0 +1,115 @@
+---
+title: "AMS380 - Homework 02"
+author: 'Tuan Bui, SBU ID: 113141951'
+date: "9/9/2021"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Question 1:
+
+Generate 100 random samples following Poission distribution with lambda = 5.
+
+```{r}
+rpois(100, lambda = 5)
+```
+
+Histogram of the sample
+
+```{r}
+hist(rpois(100, lambda = 5))
+```
+
+Question 2
+
+a. 6 < X < 8 if X follows an exponential distribution with rate is 3
+
+```{r}
+pexp(8, rate =3) - pexp(6, rate = 3)
+```
+  Answer: The probability of 6 < X < 8 if X follows an exponential distribution with rate is 3: 1.519223e-08
+
+b. X > 10 if X follows a normal distribution with mean is 8 and standard is 3
+
+```{r}
+pnorm(10, mean = 8, sd = 3, lower.tail = F)
+```
+  Answer: The probability of X > 10 if X follows a normal distribution with mean is 8 and standard is 3: 0.2524925
+
+c. X^2 < 5 if X follows a binomial distribution with size 20 and prob is 0.4
+
+```{r}
+pbinom(sqrt(5), size = 20, prob = 0.4)
+```
+  Answer: The probability of X^2 < 5 if X follows a binomial distribution with size 20 and prob is 0.4
+
+Question 3
+```{r}
+combination_base <- choose(300, 110)^2
+prop <- 0
+sq <- 55
+dq <-55
+#probability of 2 students getting at least 50% of the test
+
+repeat{
+  prop <- ((choose(300,110)*choose(110,sq)*choose(190,dq))/combination_base) + prop
+  sq <-sq + 1
+  dq <- dq -1
+  if(sq == 110) break
+}
+prop
+```
+  The probability that 2 students get at least the same 50% of the test is 0.0002275255
+
+Question 4
+
+```{r}
+# H0: mu_man = mu_woman Ha: mu_man != mu_woman
+# load data
+woman <- c(38.9, 61.2, 73.3, 21.8, 63.4, 64.6, 48.4, 48.8, 48.5)
+man <- c(67.8, 60.0, 63.4, 76.0, 89.4, 73.3, 67.3, 61.3, 62.4)
+
+# visualize data by box plot
+boxplot(woman, man, names = c('woman', 'man'))
+
+shapiro.test(woman)
+shapiro.test(man)
+
+# p-value of the shapiro-test of both samples are 0.6101 and 0.1066, which are greater than the significance level(0.05), not reject H0, both samples are normal.
+
+var.test(woman,man)
+var.test(man,woman)
+
+# p-value of the variance test is 0.1714, which is greater than the significance level (0.05), not reject H0, the variance of both samples are assumed to be the same.
+
+t.test(woman, man, mu = 0, var.equal = T)
+
+# p-value of the t-test is 0.01327, which is less than the significance level 0.05, reject H0, the mean of woman'weight and man's weight are significantly different.
+```
+
+Question 5
+
+```{r}
+#H0: mu_before = mu_after, Ha: mu_before <= mu_after
+# load data
+before <- c(200.1, 190.9, 192.7, 213.0, 241.4, 196.9, 172.2, 185.5, 205.2, 193.7)
+after <- c(392.9, 393.2, 345.1, 393.0, 434.0, 427.9, 422.0, 383.9, 392.3, 352.2)
+diff <- after - before
+
+# visualize data by box plot
+boxplot(before, after, names = c('before', 'after'))
+
+shapiro.test(diff)
+
+# p-value of shapiro test of the different is 0.6141, greater than the significance level 0.05, not reject H0, the different can be assumed normal.
+
+t.test(diff, mu = 0, alternative = 'greater', conf.level = 0.9)
+
+# p-value of the paired sample t-test is less than the significance level 0.10, reject H0, the mean of the weight after is significantly greater than one before.
+```
+
